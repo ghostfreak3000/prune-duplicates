@@ -1,0 +1,57 @@
+delete 
+from 
+	{{table}} 
+where 
+	{{id}} in 
+	( 
+		select 
+			{{id}} 
+		from 
+			( 
+				select 
+					{{join span}}{{comma span}} {{id}} 
+				from 
+					{{table}} 
+			    where 
+                {{#each span}}
+					{{this}} in 
+					( 
+						select 
+							{{this}}_group.{{this}} 
+						from 
+							( select {{join ../span}}{{comma ../span}} count(*) as "entries" FROM {{../table}} group by {{join ../span}} ) as {{this}}_group
+						where 
+							{{this}}_group.entries > 1 
+					)
+                {{#if (isLast this ../span)}}
+                {{else}}
+                and 
+                {{/if}}
+                {{/each}}
+			) as duplicates 
+		where 
+			duplicates.{{id}} not in 
+			( 
+				select 
+					MAX({{id}}) as "{{id}}" 
+				from 
+					{{table}} 
+				where 
+                {{#each span}}
+					{{this}} in 
+					( 
+						select 
+							{{this}}_group.{{this}} 
+						from 
+							( select {{join ../span}}{{comma ../span}} count(*) as "entries" FROM {{../table}} group by {{join ../span}} ) as {{this}}_group
+						where 
+							{{this}}_group.entries > 1 
+					)
+                {{#if (isLast this ../span)}}
+                {{else}}
+                and
+                {{/if}}
+                {{/each}}
+				group by {{join span}} 
+			) 
+		)
